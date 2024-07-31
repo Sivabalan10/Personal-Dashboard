@@ -1,0 +1,287 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&family=Major+Mono+Display&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Dashboard</title>
+    <style>
+ body{
+    background-image: url('static/back.jpg');
+    background-size: cover; 
+    background-attachment: fixed;
+    font-family: "Karla", sans-serif;
+ }
+.container {
+    max-width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  
+}
+
+/* Sections */
+.section {
+    margin-bottom: 30px;
+    width: 100%;
+    max-width: 600px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: #f9f9f9;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Headings */
+h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #4F85EE;
+}
+
+/* Form */
+#addTaskForm {
+    display: flex;
+    flex-direction: column;
+}
+
+#addTaskForm input[type="text"],
+#addTaskForm input[type="time"],
+#addTaskForm input[type="date"],
+#addTaskForm button {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+#addTaskForm button {
+    background-color: #4F85EE;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+#addTaskForm button:hover {
+    background-color: #3461A4;
+}
+
+/* Task List */
+#taskList {
+    list-style: none;
+    padding: 0;
+}
+
+#taskList li {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 20px;
+    background-color: #fff;
+    text-align: center;
+}
+#change_amount{
+    margin: 0 auto;
+    padding: 12px;
+    color: #f9f9f9;
+    background-color: #4F85EE;
+    border: none;
+    border-radius: 13px;
+}
+/* Responsive */
+@media screen and (max-width: 600px) {
+    .section {
+        width: 100%;
+    }
+}
+
+/* Loading screen */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Make sure it's on top of other content */
+}
+
+/* Loader animation */
+.loader {
+    border: 8px solid #f3f3f3; /* Light grey */
+    border-top: 8px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite; /* Rotate the loader */
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center;color:white;background-color: #4F85EE;">AVIS version 1</h1>
+        <div class="section">
+            <h2 style="text-align: center;color: black;">{{time}}</h2>
+        </div>
+
+        <div class="section">
+            <h2>Current Weather</h2>
+            <h3>{{city}} <br> <h1 style="color:green">( {{weather_description}} )</h1></h3>
+            <h1 style="color: #3461A4;">Temperature -  {{weather_data}}</h1>
+        </div>
+
+        <div class="section">
+            <h2>Schedule Tasks</h2>
+
+            <ul id="taskList">
+                <!-- Dynamic task listing will be added here -->
+            </ul>
+            <br><hr>
+            <form id="addTaskForm">
+                <input type="text" id="taskName" placeholder="Task Name" required>
+                <label for="taskTime">Time: </label>
+                <input type="time" id="taskTime" placeholder="time" required>
+                <label for="taskDate">Date: </label>
+                <input type="date" id="taskDate" placeholder="date" required>
+                <button type="submit">Add Task</button>
+            </form>
+            
+        </div>
+        <div class="section">
+            <h2>Today's News</h2>
+            <h3 style="border: 8px solid orangered;padding:4px;">{{news_heading}}</h3>
+            <h4>{{news_des}}</h4>
+            <hr>
+        </div>
+        <div class="section">
+            <h2>Random Facts</h2>
+            <h3 style="border: 2px solid grey;padding:6px;">{{fact}}</h3>
+            <h2>Motivation</h2>
+            <h3>{{quote}}</h3>
+        </div>
+        <div class="section">
+            <h2>Wallet</h2>
+            <h1 id = "current_amount">Rs: {{current_amount}}</h1>
+            <button id = "change_amount">Change amount</button>
+        </div>
+    </div>
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+    </div>
+
+    
+    <script>
+        document.getElementById('loading-screen').style.display = 'flex';
+         document.addEventListener('DOMContentLoaded', function() {
+            fetch('/get_tasks')
+                .then(response => response.json())
+                .then(tasks => {
+                    const taskList = document.getElementById('taskList');
+                    taskList.innerHTML = ''; // Clear the list before appending new items
+                    tasks.forEach(task => {
+                        const li = document.createElement('li');
+                        li.textContent = `${task.name} - ${task.time}`;
+                        taskList.appendChild(li);
+                    });
+                })
+                .catch(error => console.error('Error fetching tasks:', error));
+
+            document.getElementById('addTaskForm').addEventListener('submit', function(event) {
+                document.getElementById('loading-screen').style.display = 'flex';
+                event.preventDefault();
+                const taskName = document.getElementById('taskName').value;
+                const taskTime = document.getElementById('taskTime').value;
+                const taskDate = document.getElementById('taskDate').value;
+
+                fetch('/add_task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: taskName,
+                        time: taskTime,
+                        date: taskDate
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                        alert("task added successfully");
+                    }
+                    throw new Error('Failed to add task');
+                })
+                .then(data => {
+                    fetch('/get_tasks')
+                        .then(response => response.json())
+                        .then(tasks => {
+                            const taskList = document.getElementById('taskList');
+                            taskList.innerHTML = ''; 
+                            tasks.forEach(task => {
+                                const li = document.createElement('li');
+                                li.textContent = `${task.name} - ${task.time}`;
+                                taskList.appendChild(li);
+                            });
+                            document.getElementById('loading-screen').style.display = 'none';
+                        })
+                        .catch(error => console.error('Error fetching tasks:', error));
+                        document.getElementById('loading-screen').style.display = 'none';
+                })
+                .catch(error => console.error('Error adding task:', error));
+                document.getElementById('loading-screen').style.display = 'none';
+            });
+
+        document.getElementById('change_amount').addEventListener('click', function() {
+            var newAmount = prompt("Enter new amount:");
+            if (newAmount !== null) {
+                updateWalletAmount(newAmount);
+            }
+            });
+            document.getElementById('loading-screen').style.display = 'none';
+        });
+
+        function updateWalletAmount(newAmount) {
+            document.getElementById('loading-screen').style.display = 'flex';
+            fetch('/update_wallet_amount', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ amount: newAmount })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Failed to update wallet amount');
+            })
+            .then(data => {
+                document.getElementById('current_amount').textContent = `Rs: ${newAmount}`;
+                document.getElementById('loading-screen').style.display = 'none';
+            })
+            .catch(error => console.error('Error updating wallet amount:', error));
+            document.getElementById('loading-screen').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
